@@ -3,6 +3,7 @@
 #include <gba_video.h>
 #include <gba_interrupt.h>
 #include <gba_systemcalls.h>
+#include <gba_input.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +16,7 @@
 #define ERROR 0
 #define OK 1
 
+const int gscript_bookmarks[] = {112, 131};
 const char gscript_text[] = "P;Hello There|P;I'm a VN written in the Ink format|P;Do you like it?|Q;Yes, I like it!;4;No, I do not like it;6|P;Thank you!|J;END|P;Oh, I see|J;END";
 
 typedef enum gscript_type
@@ -32,6 +34,7 @@ typedef struct gscript_context
     int char_id;
     char text_buffer[TEXT_BUFFER_MAX];
     gscript_type line_type;
+    int question_id;
     int line_questions_num;
     char line_questions_text[MAX_QUESTIONS][TEXT_BUFFER_MAX];
     int line_questions_jump_id[MAX_QUESTIONS];
@@ -42,6 +45,7 @@ gscript_context gscript_context_init(gscript_context *ctx)
     ctx->char_id = 0;
     memset(ctx->text_buffer, 0, TEXT_BUFFER_MAX);
     ctx->line_type = TYPE_UNDEFINED;
+    ctx->question_id = 0;
     ctx->line_questions_num = 0;
     memset(ctx->line_questions_text, 0, TEXT_BUFFER_MAX * MAX_QUESTIONS);
     memset(ctx->line_questions_jump_id, 0, MAX_QUESTIONS);
@@ -124,13 +128,17 @@ void gscript_print_line(gscript_context *ctx)
     switch (ctx->line_type)
     {
     case TYPE_PRINT:
-        printf("- %s\n", ctx->text_buffer + 2);
+        iprintf("%s\n", ctx->text_buffer + 2);
         break;
 
     case TYPE_QUESTION:
         for (int i = 0; i < ctx->line_questions_num; i++)
         {
-            printf("- * %s -> %d\n", ctx->line_questions_text[i], ctx->line_questions_jump_id[i]);
+            // iprintf("- * %s -> %d\n", ctx->line_questions_text[i], ctx->line_questions_jump_id[i]);
+            if (ctx->question_id == i)
+                iprintf("* %s\n", ctx->line_questions_text[i]);
+            else
+                iprintf("  %s\n", ctx->line_questions_text[i]);
         }
         break;
     }
@@ -151,6 +159,56 @@ void gscript_parse_current_line(gscript_context *ctx)
     ctx->char_id++;
 }
 
+void gscript_next(gscript_context *ctx)
+{
+    // Parse line
+    gscript_parse_current_line(ctx);
+
+    // Get line type
+    gscript_get_line_type(ctx);
+
+    // Process line
+    gscript_process_line(ctx);
+}
+
+void gscript_question_move_prev(gscript_context *ctx)
+{
+    ctx->question_id--;
+
+    if (ctx->question_id < 0)
+        ctx->question_id = MAX_QUESTIONS - 1;
+}
+
+void gscript_question_move_next(gscript_context *ctx)
+{
+    ctx->question_id++;
+
+    if (ctx->question_id > MAX_QUESTIONS - 1)
+        ctx->question_id = 0;
+}
+
+void gscript_process_input(gscript_context *ctx)
+{
+    scanKeys();
+
+    int keys_pressed = keysDown();
+
+    switch (ctx->line_type)
+    {
+    case TYPE_PRINT:
+        if (keys_pressed & KEY_A)
+            gscript_next(ctx);
+        break;
+
+    case TYPE_QUESTION:
+        if (keys_pressed & KEY_UP)
+            gscript_question_move_prev(ctx);
+        if (keys_pressed & KEY_DOWN)
+            gscript_question_move_next(ctx);
+        break;
+    }
+}
+
 int main()
 {
     irqInit();
@@ -161,27 +219,17 @@ int main()
     gscript_context ctx;
     gscript_context_init(&ctx);
 
-    int i = 0;
-    while (i < 5)
-    {
-        // Parse line
-        gscript_parse_current_line(&ctx);
-
-        // Get line type
-        gscript_get_line_type(&ctx);
-
-        // Process line
-        gscript_process_line(&ctx);
-
-        // Print line
-        gscript_print_line(&ctx);
-
-        i++;
-    }
+    gscript_next(&ctx);
 
     while (1)
     {
         VBlankIntrWait();
+
+        gscript_process_input(&ctx);
+
+        iprintf("\x1b[2J");
+
+        gscript_print_line(&ctx);
     }
 
     return 0;
