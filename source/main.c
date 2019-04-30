@@ -17,7 +17,7 @@
 #define OK 1
 
 const int gscript_bookmarks[] = {112, 131};
-const char gscript_text[] = "P;Hello There|P;I'm a VN written in the Ink format|P;Do you like it?|Q;Yes, I like it!;4;No, I do not like it;6|P;Thank you!|J;END|P;Oh, I see|J;END";
+const char gscript_text[] = "P;Hello There|P;I'm a VN written in the Ink format|P;Do you like it?|Q;Yes, I like it!;0;No, I do not like it;1|P;Thank you!|J;END|P;Oh, I see|J;END";
 
 typedef enum gscript_type
 {
@@ -82,6 +82,11 @@ void gscript_parse_question(gscript_context *ctx)
 
 void gscript_parse_jump(gscript_context *ctx)
 {
+}
+
+void gscript_question_jump(gscript_context *ctx)
+{
+    ctx->char_id = gscript_bookmarks[ctx->line_questions_jump_id[ctx->question_id]];
 }
 
 gscript_type gscript_get_line_type(gscript_context *ctx)
@@ -205,6 +210,11 @@ void gscript_process_input(gscript_context *ctx)
             gscript_question_move_prev(ctx);
         if (keys_pressed & KEY_DOWN)
             gscript_question_move_next(ctx);
+        if (keys_pressed & KEY_A)
+        {
+            gscript_question_jump(ctx);
+            gscript_next(ctx);
+        }
         break;
     }
 }
@@ -227,6 +237,7 @@ int main()
 
         gscript_process_input(&ctx);
 
+        // Resets console output
         iprintf("\x1b[2J");
 
         gscript_print_line(&ctx);
