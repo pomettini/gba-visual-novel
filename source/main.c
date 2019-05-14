@@ -176,6 +176,7 @@ void gscript_print_line(gscript_context *ctx)
         break;
 
     case TYPE_END:
+        iprintf("END OF THE STORY\n");
         break;
     }
 }
