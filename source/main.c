@@ -12,12 +12,16 @@
 
 #define TEXT_BUFFER_MAX 200
 #define MAX_QUESTIONS 2
+#define JUMP_BUFFER_SIZE 5
 
 #define ERROR 0
 #define OK 1
 
-const int gscript_bookmarks[] = {112, 131};
-const char gscript_text[] = "P;Hello There|P;I'm a VN written in the Ink format|P;Do you like it?|Q;Yes, I like it!;0;No, I do not like it;1|P;Thank you!|J;END|P;Oh, I see|J;END";
+#define ever \
+    ;        \
+    ;
+
+const char gscript_text[] = "P;Hello There|P;I'm a VN written in the Ink format|P;Do you like it?|Q;Yes, I like it!;00120;No, I do not like it;00139|P;Thank you!|J;END|P;Oh, I see|J;END";
 
 typedef enum gscript_type
 {
@@ -37,7 +41,7 @@ typedef struct gscript_context
     int question_id;
     int line_questions_num;
     char line_questions_text[MAX_QUESTIONS][TEXT_BUFFER_MAX];
-    int line_questions_jump_id[MAX_QUESTIONS];
+    int line_questions_jump[MAX_QUESTIONS];
 } gscript_context;
 
 gscript_context gscript_context_init(gscript_context *ctx)
@@ -48,7 +52,7 @@ gscript_context gscript_context_init(gscript_context *ctx)
     ctx->question_id = 0;
     ctx->line_questions_num = 0;
     memset(ctx->line_questions_text, 0, TEXT_BUFFER_MAX * MAX_QUESTIONS);
-    memset(ctx->line_questions_jump_id, 0, MAX_QUESTIONS);
+    memset(ctx->line_questions_jump, 0, MAX_QUESTIONS);
 }
 
 void gscript_parse_question(gscript_context *ctx)
@@ -72,7 +76,7 @@ void gscript_parse_question(gscript_context *ctx)
         else
         {
             // If it's the jump index
-            ctx->line_questions_jump_id[ctx->line_questions_num] = atoi(token);
+            ctx->line_questions_jump[ctx->line_questions_num] = atoi(token);
             ctx->line_questions_num++;
         }
 
@@ -86,7 +90,7 @@ void gscript_parse_jump(gscript_context *ctx)
 
 void gscript_question_jump(gscript_context *ctx)
 {
-    ctx->char_id = gscript_bookmarks[ctx->line_questions_jump_id[ctx->question_id]];
+    ctx->char_id = ctx->line_questions_jump[ctx->question_id];
 }
 
 gscript_type gscript_get_line_type(gscript_context *ctx)
@@ -119,11 +123,23 @@ void gscript_process_line(gscript_context *ctx)
 {
     switch (ctx->line_type)
     {
+    case TYPE_UNDEFINED:
+        break;
+
+    case TYPE_ERROR:
+        break;
+
     case TYPE_PRINT:
         break;
 
     case TYPE_QUESTION:
         gscript_parse_question(ctx);
+        break;
+
+    case TYPE_JUMP:
+        break;
+
+    case TYPE_END:
         break;
     }
 }
@@ -132,6 +148,12 @@ void gscript_print_line(gscript_context *ctx)
 {
     switch (ctx->line_type)
     {
+    case TYPE_UNDEFINED:
+        break;
+
+    case TYPE_ERROR:
+        break;
+
     case TYPE_PRINT:
         iprintf("%s\n", ctx->text_buffer + 2);
         break;
@@ -139,12 +161,18 @@ void gscript_print_line(gscript_context *ctx)
     case TYPE_QUESTION:
         for (int i = 0; i < ctx->line_questions_num; i++)
         {
-            // iprintf("- * %s -> %d\n", ctx->line_questions_text[i], ctx->line_questions_jump_id[i]);
+            // iprintf("- * %s -> %d\n", ctx->line_questions_text[i], ctx->line_questions_jump[i]);
             if (ctx->question_id == i)
                 iprintf("* %s\n", ctx->line_questions_text[i]);
             else
                 iprintf("  %s\n", ctx->line_questions_text[i]);
         }
+        break;
+
+    case TYPE_JUMP:
+        break;
+
+    case TYPE_END:
         break;
     }
 }
@@ -200,6 +228,12 @@ void gscript_process_input(gscript_context *ctx)
 
     switch (ctx->line_type)
     {
+    case TYPE_UNDEFINED:
+        break;
+
+    case TYPE_ERROR:
+        break;
+
     case TYPE_PRINT:
         if (keys_pressed & KEY_A)
             gscript_next(ctx);
@@ -216,6 +250,12 @@ void gscript_process_input(gscript_context *ctx)
             gscript_next(ctx);
         }
         break;
+
+    case TYPE_JUMP:
+        break;
+
+    case TYPE_END:
+        break;
     }
 }
 
@@ -231,7 +271,7 @@ int main()
 
     gscript_next(&ctx);
 
-    while (1)
+    for (ever)
     {
         VBlankIntrWait();
 
@@ -239,6 +279,8 @@ int main()
 
         // Resets console output
         iprintf("\x1b[2J");
+
+        iprintf("%c\n", ctx.text_buffer[0]);
 
         gscript_print_line(&ctx);
     }
