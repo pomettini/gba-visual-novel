@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
+#include "gscript.h"
 
 #define TEXT_BUFFER_MAX 200
 #define MAX_QUESTIONS 2
@@ -20,8 +21,6 @@
 #define ever \
     ;        \
     ;
-
-const char gscript_text[] = "P;Hello There|P;I'm a VN written in the Ink format|P;Do you like it?|Q;Yes, I like it!;00120;No, I do not like it;00139|P;Thank you!|J;END|P;Oh, I see|J;END";
 
 typedef enum gscript_type
 {
@@ -63,11 +62,15 @@ void gscript_parse_question(gscript_context *ctx)
 
     // Skipping the first two characters
     // Because they're useless
+
+    // TODO: Refactor this
     for (token = strtok(ctx->text_buffer + 2, ";"); token; token = strtok(NULL, ";"))
     {
         // Counts to multiple of two
         // The first is going to be the text
         // The second is going to be the index
+
+        //TODO: Refactor this
         if ((count + 1) % 2)
         {
             // If is't the text
@@ -279,8 +282,6 @@ int main()
 
         // Resets console output
         iprintf("\x1b[2J");
-
-        iprintf("%c\n", ctx.text_buffer[0]);
 
         gscript_print_line(&ctx);
     }
