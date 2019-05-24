@@ -43,7 +43,7 @@ typedef struct gscript_context
     int line_questions_jump[MAX_QUESTIONS];
 } gscript_context;
 
-gscript_context gscript_context_init(gscript_context *ctx)
+void gscript_context_init(gscript_context *ctx)
 {
     ctx->char_id = 0;
     memset(ctx->text_buffer, 0, TEXT_BUFFER_MAX);
@@ -51,7 +51,7 @@ gscript_context gscript_context_init(gscript_context *ctx)
     ctx->question_id = 0;
     ctx->line_questions_num = 0;
     memset(ctx->line_questions_text, 0, TEXT_BUFFER_MAX * MAX_QUESTIONS);
-    memset(ctx->line_questions_jump, 0, MAX_QUESTIONS);
+    memset(ctx->line_questions_jump, 0, sizeof(int) * MAX_QUESTIONS);
 }
 
 void gscript_parse_question(gscript_context *ctx)
@@ -96,7 +96,7 @@ void gscript_question_jump(gscript_context *ctx)
     ctx->char_id = ctx->line_questions_jump[ctx->question_id];
 }
 
-gscript_type gscript_get_line_type(gscript_context *ctx)
+void gscript_get_line_type(gscript_context *ctx)
 {
     switch (ctx->text_buffer[0])
     {
@@ -149,6 +149,9 @@ void gscript_process_line(gscript_context *ctx)
 
 void gscript_print_line(gscript_context *ctx)
 {
+    // Set text position to the thirteenth line
+    iprintf("\x1b[13;0H");
+
     switch (ctx->line_type)
     {
     case TYPE_UNDEFINED:
