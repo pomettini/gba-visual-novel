@@ -1,9 +1,4 @@
-
-// #include <gba_console.h>
-// #include <gba_video.h>
-// #include <gba_interrupt.h>
-// #include <gba_systemcalls.h>
-// #include <gba_input.h>
+#include <gba_input.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -161,7 +156,7 @@ void gscript_print_line(gscript_context *ctx)
 		break;
 
 	case TYPE_PRINT:
-		WriteStringWide(20, 72, ctx->text_buffer + 2);
+		WriteStringWide(0, 100, ctx->text_buffer + 2);
 		break;
 
 	case TYPE_QUESTION:
@@ -169,9 +164,14 @@ void gscript_print_line(gscript_context *ctx)
 		{
 			// iprintf("- * %s -> %d\n", ctx->line_questions_text[i], ctx->line_questions_jump[i]);
 			if (ctx->question_id == i)
-				iprintf("* %s\n", ctx->line_questions_text[i]);
+			{
+				WriteStringWide(0, 100 + (i * 10), "*");
+				WriteStringWide(10, 100 + (i * 10), ctx->line_questions_text[i]);
+			}
 			else
-				iprintf("  %s\n", ctx->line_questions_text[i]);
+			{
+				WriteStringWide(10, 100 + (i * 10), ctx->line_questions_text[i]);
+			}
 		}
 		break;
 
@@ -179,7 +179,7 @@ void gscript_print_line(gscript_context *ctx)
 		break;
 
 	case TYPE_END:
-		WriteStringWide(20, 72, "END OF THE STORY\n");
+		WriteStringWide(0, 100, "END OF THE STORY");
 		break;
 	}
 }
@@ -229,6 +229,10 @@ void gscript_question_move_next(gscript_context *ctx)
 
 void gscript_process_input(gscript_context *ctx)
 {
+	scanKeys();
+
+	int keys_pressed = keysDown();
+
 	switch (ctx->line_type)
 	{
 	case TYPE_UNDEFINED:
@@ -238,16 +242,16 @@ void gscript_process_input(gscript_context *ctx)
 		break;
 
 	case TYPE_PRINT:
-		if (IS_A_PRESSED)
+		if (keys_pressed & KEY_A)
 			gscript_next(ctx);
 		break;
 
 	case TYPE_QUESTION:
-		if (IS_UP_PRESSED)
+		if (keys_pressed & KEY_UP)
 			gscript_question_move_prev(ctx);
-		if (IS_DOWN_PRESSED)
+		if (keys_pressed & KEY_DOWN)
 			gscript_question_move_next(ctx);
-		if (IS_A_PRESSED)
+		if (keys_pressed & KEY_A)
 		{
 			gscript_question_jump(ctx);
 			gscript_next(ctx);
@@ -280,6 +284,14 @@ int main()
 		DrawFullScreenOpaque((u16 *)wallpaperData);
 
 		gscript_process_input(&ctx);
+
+		// for (int y = 100; y < 160; y++)
+		// {
+		// 	for (int x = 0; x < 240; x++)
+		// 	{
+		// 		PlotSinglePixelOpaque(x, y, 0);
+		// 	}
+		// }
 
 		gscript_print_line(&ctx);
 
