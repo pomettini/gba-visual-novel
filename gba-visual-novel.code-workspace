@@ -6,7 +6,11 @@
 	],
 	"settings": {
 		"files.associations": {
-			"gba_console.h": "c"
+			"gba_console.h": "c",
+			"gba_video.h": "c",
+			"gba_interrupt.h": "c",
+			"gba_base.h": "c",
+			"tonc.h": "c"
 		}
 	}
 }

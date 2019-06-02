@@ -20,7 +20,7 @@ TARGET		:=	$(shell basename $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	
-INCLUDES	:=  cppcheck
+INCLUDES	:=  
 
 
 #---------------------------------------------------------------------------------
